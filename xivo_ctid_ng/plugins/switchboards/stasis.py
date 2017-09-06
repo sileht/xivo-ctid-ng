@@ -4,8 +4,8 @@
 import logging
 
 from ari.exceptions import ARINotFound
+from xivo.pubsub import CallbackCollector
 from xivo_ctid_ng.ari_ import DEFAULT_APPLICATION_NAME
-
 from .exceptions import NoSuchSwitchboard
 
 logger = logging.getLogger(__name__)
@@ -18,13 +18,19 @@ class SwitchboardsStasis:
         self._confd = confd
         self._notifier = switchboard_notifier
         self._service = switchboard_service
+        self._startup_callback_collecter = CallbackCollector()
+        self._startup_callback_collecter.subscribe(self.notify_all_switchboard)
+        self._confd.pubsub.subscribe('token_changed', self._startup_callback_collecter.new_source())
 
     def subscribe(self):
-        self._ari.on_application_registered(DEFAULT_APPLICATION_NAME, self.notify_all_switchboard_queued)
-        self._ari.on_application_registered(DEFAULT_APPLICATION_NAME, self.notify_all_switchboard_held)
+        self._ari.on_application_registered(DEFAULT_APPLICATION_NAME, self._startup_callback_collecter.new_source())
         self._ari.on_channel_event('StasisStart', self.stasis_start)
         self._ari.on_channel_event('ChannelLeftBridge', self.unqueue)
         self._ari.on_channel_event('ChannelLeftBridge', self.unhold)
+
+    def notify_all_switchboard(self):
+        self.notify_all_switchboard_queued()
+        self.notify_all_switchboard_held()
 
     def notify_all_switchboard_queued(self):
         for switchboard in self._confd.switchboards.list()['items']:

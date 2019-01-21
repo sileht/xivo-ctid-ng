@@ -32,6 +32,7 @@ setup(
             'presences = xivo_ctid_ng.plugins.presences.plugin:Plugin',
             'relocates = xivo_ctid_ng.plugins.relocates.plugin:Plugin',
             'status = xivo_ctid_ng.plugins.status.plugin:Plugin',
+            'stt = xivo_ctid_ng.plugins.stt.plugin:Plugin',
             'switchboards = xivo_ctid_ng.plugins.switchboards.plugin:Plugin',
             'transfers = xivo_ctid_ng.plugins.transfers.plugin:Plugin',
             'voicemails = xivo_ctid_ng.plugins.voicemails.plugin:Plugin',

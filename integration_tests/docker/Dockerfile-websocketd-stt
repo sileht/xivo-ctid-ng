@@ -1,0 +1,7 @@
+FROM python:alpine3.8
+
+ADD assets/websocketd-stt/websocketd.py /
+ADD assets/websocketd-stt/record.wav /
+WORKDIR /
+
+RUN pip install websockets

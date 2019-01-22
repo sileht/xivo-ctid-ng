@@ -7,8 +7,15 @@ services:
       - auth
       - ctid-ng
       - rabbitmq
+      - websocket-stt
     environment:
-      TARGETS: "ari:5039 rabbitmq:5672 amid:9491 auth:9497 ctid-ng:9500"
+      TARGETS: "ari:5039 rabbitmq:5672 amid:9491 auth:9497 ctid-ng:9500 websocket-stt:8765"
+
+  websocket-stt:
+    image: websocket-stt
+    expose:
+      - "8765"
+    command: "python /websocketd.py"
 
   amid:
     image: wazopbx/xivo-amid

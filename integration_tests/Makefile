@@ -8,11 +8,13 @@ build-ctid-ng: docker-pull egg-info
 	docker build -t wazopbx/xivo-ctid-ng ..
 	docker build --no-cache -t xivo-ctid-ng-test -f docker/Dockerfile-ctid-ng-test ..
 	docker build -t xivo-websocketd-mock -f docker/Dockerfile-websocketd-mock .
+	docker build -t websocket-stt -f docker/Dockerfile-websocketd-stt .
 
 build-ari: docker-pull
 	test -d $(CHAN_TEST_DIR)
 	docker build -t ari-mock -f docker/Dockerfile-ari-mock .
 	docker build -t ari-real -f $(CHAN_TEST_DIR)/Dockerfile $(CHAN_TEST_DIR)
+
 
 docker-pull:
 	docker pull mongooseim/mongooseim:2.1.0

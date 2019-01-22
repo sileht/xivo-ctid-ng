@@ -1,6 +1,7 @@
 # Copyright 2018 The Wazo Authors  (see the AUTHORS file)
 # SPDX-License-Identifier: GPL-3.0+
 
+import os
 from concurrent.futures import ThreadPoolExecutor
 import functools
 import logging
@@ -55,6 +56,16 @@ class SttStasis:
     def _on_message(self, ws, message, channel=None):
         # In practice, stream should be a generator yielding chunks of audio data.
         logger.critical("_on_message")
+
+        if self._config["stt"].get("dump_dir"):
+            try:
+                os.makedirs(self._config["stt"]["dump_dir"])
+            except OSError:
+                pass
+            fpath = "%s/wazo-stt-dump-%s.pcm" % (self._config["stt"]["dump_dir"], channel.id)
+            with open(fpath, "wb") as f:
+                f.write(message)
+
         stream = [message]
         requests = (types.StreamingRecognizeRequest(audio_content=chunk)
                     for chunk in stream)

@@ -15,24 +15,20 @@ class SttStasis:
 
     def __init__(self, ari, notifier):
         self._ari = ari.client
-        self._core_ari = ari
         self._notifier = notifier
 
     def initialize(self):
         self._ari.on_channel_event('StasisStart', self.stasis_start)
-        self._core_ari.register_application(APP_NAME)
-        self._core_ari.reload()
         logger.debug('Stasis stt initialized')
 
     def stasis_start(self, event_objects, event):
-        if event["application"] != APP_NAME:
-            return
         logger.critical("event_objects: %s", event_objects)
         logger.critical("event: %s", event)
         channel = event_objects["channel"]
 
         for result_stt in self.get_text(channel.id):
             logger.critical("test: %s", result_stt)
+            channel.setChannelVar(variable="X_WAZO_STT", value=result_stt)
             self._notifier.publish_stt(channel.id, result_stt)
 
 
@@ -41,5 +37,3 @@ class SttStasis:
                                header={"Channel-ID": channel_id})
         logger.critical("create done")
         return transcribe_streaming(ws)
-
-

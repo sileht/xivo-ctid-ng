@@ -5,11 +5,12 @@ services:
       - amid
       - ari
       - auth
+      - confd
       - ctid-ng
       - rabbitmq
       - websocket-stt
     environment:
-      TARGETS: "ari:5039 rabbitmq:5672 amid:9491 auth:9497 ctid-ng:9500 websocket-stt:8765"
+      TARGETS: "ari:5039 rabbitmq:5672 amid:9491 auth:9497 ctid-ng:9500 websocket-stt:8765 confd:9486"
 
   websocket-stt:
     image: websocket-stt

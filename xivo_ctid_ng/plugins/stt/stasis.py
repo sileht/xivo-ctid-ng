@@ -63,7 +63,7 @@ class SttStasis:
             except OSError:
                 pass
             fpath = "%s/wazo-stt-dump-%s.pcm" % (self._config["stt"]["dump_dir"], channel.id)
-            with open(fpath, "wb") as f:
+            with open(fpath, "wb+") as f:
                 f.write(message)
 
         stream = [message]

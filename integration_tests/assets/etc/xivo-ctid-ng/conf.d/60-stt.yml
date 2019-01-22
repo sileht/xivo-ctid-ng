@@ -1,3 +1,14 @@
 
 enabled_plugins:
   stt: true
+  applications: true
+  conferences: false
+  chats: false
+  mongooseim: false
+  presences: false
+  relocates: false
+  status: true
+  switchboards: false
+  transfers: false
+  voicemails: false
+

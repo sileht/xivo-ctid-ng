@@ -3,8 +3,6 @@
 
 import logging
 
-from .schemas import participant_schema
-
 logger = logging.getLogger(__name__)
 
 
@@ -14,7 +12,8 @@ class SttBusEventHandler:
         self._notifier = notifier
 
     def subscribe(self, bus_consumer):
-        bus_consumer.on_ami_event('patate', self._on_new_call)
+        bus_consumer.on_ami_event('NewChannel', self._on_new_call)
 
     def _on_new_call(self, event):
+        logger.critical("new_call stt %s" % event)
         self._notifier.hello_world()

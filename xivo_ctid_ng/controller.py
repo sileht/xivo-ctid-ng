@@ -44,6 +44,8 @@ class Controller:
                                              config['bus'],
                                              partial(self_check,
                                                      config['rest_api']['port'])]
+
+        logger.critical("Loading plugins")
         plugin_helpers.load(
             namespace='xivo_ctid_ng.plugins',
             names=config['enabled_plugins'],

@@ -1,59 +1,67 @@
 # Copyright 2018-2019 The Wazo Authors  (see the AUTHORS file)
 # SPDX-License-Identifier: GPL-3.0+
 
-from ari.exceptions import ARINotFound
 from hamcrest import (
     assert_that,
     calling,
+    contains,
     empty,
     equal_to,
     contains_inanyorder,
     has_entries,
     has_entry,
+    has_items,
     has_properties,
 )
 from xivo_test_helpers import until
-from xivo_test_helpers.hamcrest.raises import raises
-from xivo_ctid_ng_client.exceptions import CtidNGError
+
 from .helpers.base import RealAsteriskIntegrationTest
-from .helpers.confd import MockConference
 
 ENDPOINT_AUTOANSWER = 'Test/integration-caller/autoanswer'
-CONFERENCE1_EXTENSION = '4001'
-CONFERENCE1_ID = 4001
 
 
 class TestStt(RealAsteriskIntegrationTest):
-
     asset = 'stt'
 
-    def setUp(self):
-        super().setUp()
-        self.confd.reset()
+    def test_stt(self):
+        event_accumulator = self.bus.accumulator('stt.event')
 
-
-class TestSttHelloWorld(TestStt):
-
-    def test_hello_world(self):
-        event_accumulator = self.bus.accumulator('ami.patate')
-
-        self.bus.send_event({
-            'data': {
-            }
-        }, 'ami.patate')
+        channel = self.call_app()
+        # self.bus.send_event({'data': {'Event': "fake_call"}}, 'ami.fake_call')
 
         def event_received():
             events = event_accumulator.accumulate()
             assert_that(
                 events,
-                contains(
+                has_items(
                     has_entries(
-                        name='hello_world',
+                        name="stt",
                         data=has_entries(
-                            hello="world"
+                            call_id="%s" % channel.id,
+                            result_stt="crise cardiaque (%s)" % channel.id
                         )
                     )
                 )
             )
 
         until.assert_(event_received, tries=3)
+
+    def call_app(self, variables=None):
+        kwargs = {
+            'endpoint': ENDPOINT_AUTOANSWER,
+            'app': 'wazo-app-stt',
+            'appArgs': 'incoming',
+            'variables': {
+                'variables': {
+                    'WAZO_CHANNEL_DIRECTION': 'to-wazo',
+                },
+            }
+        }
+
+        if variables:
+            for key, value in variables.items():
+                kwargs['variables']['variables'][key] = value
+
+        channel = self.ari.channels.originate(**kwargs)
+        return channel
+

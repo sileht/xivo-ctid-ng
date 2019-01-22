@@ -30,6 +30,7 @@ def main(argv=None):
         config['debug'],
         config['log_level']
     )
+    logger.critical("STARTING")
     xivo_logging.silence_loggers(
         ['amqp', 'Flask-Cors', 'iso8601', 'kombu', 'swaggerpy', 'urllib3', 'ari.model'],
         logging.WARNING,

@@ -1,25 +1,29 @@
 # Copyright 2019 The Wazo Authors  (see the AUTHORS file)
 # SPDX-License-Identifier: GPL-3.0+
 
-from xivo_bus.resources.conference.event import (
-    HelloWorldEvent,
-)
 
-class HelloWorldEvent(object):
-    name = 'hello_world'
+import logging
 
-    def __init__(self):
-        # self.required_acl = 'events.stt.hello_world'
-        self.routing_key = 'stt.hello_world'
+logger = logging.getLogger(__name__)
+
+
+class SttEvent(object):
+    name = 'stt'
+
+    def __init__(self, channel_id, result_stt):
+        self.routing_key = 'stt.event'
+        self.channel_id = channel_id
+        self.result_stt = result_stt
 
     def marshal(self):
-        result = dict()
-        result['hello'] = "world"
-        return result
+        return {
+            "call_id": "%s" % self.channel_id,
+            "result_stt": self.result_stt
+        }
 
-    @classmethod
-    def unmarshal(cls, msg):
-        return cls()
+#    @classmethod
+#    def unmarshal(cls, msg):
+#        return cls(**dict(msg))
 
 
 class SttNotifier:
@@ -27,6 +31,6 @@ class SttNotifier:
     def __init__(self, bus_producer):
         self._bus_producer = bus_producer
 
-    def hello_world(self):
-        event = HelloWorldEvent()
+    def publish_stt(self, channel_id, result_stt):
+        event = SttEvent(channel_id, result_stt)
         self._bus_producer.publish(event)

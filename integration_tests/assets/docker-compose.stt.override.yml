@@ -13,9 +13,11 @@ services:
 
   websocket-stt:
     image: websocket-stt
-    expose:
-      - "8765"
+    ports:
+      - "8765:8765"
     command: "python /websocketd.py"
+    volumes:
+        - ./websocketd-stt/websocketd.py:/websocketd.py
 
   amid:
     image: wazopbx/xivo-amid
@@ -30,6 +32,7 @@ services:
     volumes:
       - ./etc/xivo-ctid-ng/conf.d/20-real-asterisk.yml:/etc/xivo-ctid-ng/conf.d/20-real-asterisk.yml
       - ./etc/xivo-ctid-ng/conf.d/60-stt.yml:/etc/xivo-ctid-ng/conf.d/60-stt.yml
+      - ./creds.json:/creds.json
 
   ari:
     image: ari-real

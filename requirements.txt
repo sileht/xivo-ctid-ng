@@ -20,3 +20,4 @@ python-consul==0.7.0
 pyyaml==3.12  # from xivo-lib-python
 requests==2.20.0
 stevedore==1.17.1
+google-cloud-speech

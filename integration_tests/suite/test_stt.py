@@ -38,13 +38,13 @@ class TestStt(RealAsteriskIntegrationTest):
                         name="stt",
                         data=has_entries(
                             call_id="%s" % channel.id,
-                            result_stt="crise cardiaque (%s)" % channel.id
+                            result_stt="crise cardiaque"
                         )
                     )
                 )
             )
 
-        until.assert_(event_received, tries=3)
+        until.assert_(event_received, tries=10)
 
     def call_app(self, variables=None):
         kwargs = {

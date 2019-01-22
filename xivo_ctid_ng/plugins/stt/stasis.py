@@ -7,15 +7,12 @@ import functools
 import logging
 
 from websocket import WebSocketApp
-from .transcribe_streaming import transcribe_streaming
 
 from google.cloud import speech
 from google.cloud.speech import enums
 from google.cloud.speech import types
 
 logger = logging.getLogger(__name__)
-
-APP_NAME = "wazo-app-stt"
 
 
 class SttStasis:

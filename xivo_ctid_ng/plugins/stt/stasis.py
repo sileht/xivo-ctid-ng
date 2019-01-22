@@ -1,10 +1,13 @@
 # Copyright 2018 The Wazo Authors  (see the AUTHORS file)
 # SPDX-License-Identifier: GPL-3.0+
 
+import functools
 import logging
 
-from websocket import create_connection, WebSocketException
+from websocket import WebSocketApp
 from .transcribe_streaming import transcribe_streaming
+
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +20,7 @@ class SttStasis:
         self._config = config
         self._ari = ari.client
         self._notifier = notifier
+        self._threadpool = ThreadPoolExecutor(max_workers=10)
 
     def initialize(self):
         self._ari.on_channel_event('StasisStart', self.stasis_start)
@@ -25,15 +29,23 @@ class SttStasis:
     def stasis_start(self, event_objects, event):
         logger.critical("event_objects: %s", event_objects)
         logger.critical("event: %s", event)
-        channel = event_objects["channel"]
+        f = self._threadpool.submit(self._handle_call, event_objects)
+        logger.critical("thread started")
 
-        for result_stt in self.get_text(channel.id):
+    def _handle_call(self, event_objects):
+        channel = event_objects["channel"]
+        ws = WebSocketApp(self._config["stt"]["ari_websocket_stream"],
+                          header={"Channel-ID": channel.id},
+                          subprotocols=["stream-channel"],
+                          on_message=functools.partial(self._on_message,
+                                                       channel=channel)
+                          )
+        logger.critical("websocket client started")
+        ws.run_forever()
+
+    def _on_message(self, ws, message, channel=None):
+        results = transcribe_streaming(message, self._config["stt"]["google_creds"])
+        for result_stt in results:
             logger.critical("test: %s", result_stt)
             channel.setChannelVar(variable="X_WAZO_STT", value=result_stt)
             self._notifier.publish_stt(channel.id, result_stt)
-
-    def get_text(self, channel_id):
-        ws = create_connection(self._config["stt"]["ari_websocket_stream"],
-                               header={"Channel-ID": channel_id})
-        logger.critical("create done")
-        return transcribe_streaming(ws, self._config["stt"]["google_creds"])

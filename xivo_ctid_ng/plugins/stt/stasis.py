@@ -32,6 +32,12 @@ class SttStasis:
                 sample_rate_hertz=16000,
                 language_code='fr-FR'))
 
+        if self._config["stt"].get("dump_dir"):
+            try:
+                os.makedirs(self._config["stt"]["dump_dir"])
+            except OSError:
+                pass
+
     def initialize(self):
         self._ari.on_channel_event('StasisStart', self.stasis_start)
         logger.debug('Stasis stt initialized')
@@ -44,27 +50,28 @@ class SttStasis:
 
     def _handle_call(self, event_objects):
         channel = event_objects["channel"]
+        dump = None
+
+        if self._config["stt"].get("dump_dir"):
+            fpath = "%s/wazo-stt-dump-%s.pcm" % (self._config["stt"]["dump_dir"], channel.id)
+            dump = open(fpath, "wb+")
+
         ws = WebSocketApp(self._config["stt"]["ari_websocket_stream"],
                           header={"Channel-ID": channel.id},
                           subprotocols=["stream-channel"],
                           on_message=functools.partial(self._on_message,
-                                                       channel=channel)
+                                                       channel=channel,
+                                                       dump=dump)
                           )
         logger.critical("websocket client started")
         ws.run_forever()
 
-    def _on_message(self, ws, message, channel=None):
+    def _on_message(self, ws, message, channel=None, dump=None):
         # In practice, stream should be a generator yielding chunks of audio data.
         logger.critical("_on_message")
 
-        if self._config["stt"].get("dump_dir"):
-            try:
-                os.makedirs(self._config["stt"]["dump_dir"])
-            except OSError:
-                pass
-            fpath = "%s/wazo-stt-dump-%s.pcm" % (self._config["stt"]["dump_dir"], channel.id)
-            with open(fpath, "wb+") as f:
-                f.write(message)
+        if dump:
+            dump.write(message)
 
         stream = [message]
         requests = (types.StreamingRecognizeRequest(audio_content=chunk)

@@ -59,12 +59,20 @@ class SttStasis:
         ws = WebSocketApp(self._config["stt"]["ari_websocket_stream"],
                           header={"Channel-ID": channel.id},
                           subprotocols=["stream-channel"],
+                          on_error=self._on_error,
                           on_message=functools.partial(self._on_message,
                                                        channel=channel,
-                                                       dump=dump)
+                                                       dump=dump),
+                          on_close=functools.partial(self._on_close, dump=dump)
                           )
         logger.critical("websocket client started")
         ws.run_forever()
+
+    def _on_error(self, ws, error):
+        logger.error("stt websocket error: %s", error)
+
+    def _on_close(self, ws, dump):
+        dump.close()
 
     def _on_message(self, ws, message, channel=None, dump=None):
         # In practice, stream should be a generator yielding chunks of audio data.

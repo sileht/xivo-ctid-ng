@@ -4,7 +4,6 @@
 import logging
 
 from .notifier import SttNotifier
-from .bus_consume import SttBusEventHandler
 from .stasis import SttStasis
 
 logger = logging.getLogger(__name__)
@@ -18,10 +17,5 @@ class Plugin:
         ari = dependencies['ari']
 
         notifier = SttNotifier(bus_publisher)
-
         stasis = SttStasis(ari, notifier)
         stasis.initialize()
-
-        # bus_event_handler = SttBusEventHandler(notifier)
-        # bus_event_handler.subscribe(bus_consumer)
-

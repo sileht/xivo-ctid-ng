@@ -13,7 +13,8 @@ APP_NAME = "wazo-app-stt"
 
 class SttStasis:
 
-    def __init__(self, ari, notifier):
+    def __init__(self, config, ari, notifier):
+        self._config = config
         self._ari = ari.client
         self._notifier = notifier
 
@@ -31,9 +32,8 @@ class SttStasis:
             channel.setChannelVar(variable="X_WAZO_STT", value=result_stt)
             self._notifier.publish_stt(channel.id, result_stt)
 
-
     def get_text(self, channel_id):
-        ws = create_connection("ws://websocket-stt:8765/stream",
+        ws = create_connection(self._config["stt"]["ari_websocket_stream"],
                                header={"Channel-ID": channel_id})
         logger.critical("create done")
-        return transcribe_streaming(ws)
+        return transcribe_streaming(ws, self._config["stt"]["google_creds"])

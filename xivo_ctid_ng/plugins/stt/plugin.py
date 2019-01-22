@@ -15,7 +15,8 @@ class Plugin:
         bus_consumer = dependencies['bus_consumer']
         bus_publisher = dependencies['bus_publisher']
         ari = dependencies['ari']
+        config = dependencies['config']
 
         notifier = SttNotifier(bus_publisher)
-        stasis = SttStasis(ari, notifier)
+        stasis = SttStasis(config, ari, notifier)
         stasis.initialize()

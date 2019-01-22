@@ -2,16 +2,16 @@
 
 import os
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/creds.json"
-
 from google.cloud import speech
 from google.cloud.speech import enums
 from google.cloud.speech import types
 
-# [START speech_transcribe_streaming]
-def transcribe_streaming(ws):
+
+def transcribe_streaming(ws, creds_path):
+    # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/creds.json"
+
     """Streams transcription of the given audio file."""
-    client = speech.SpeechClient()
+    client = speech.SpeechClient.from_service_account_file(creds_path)
     config = types.RecognitionConfig(
         encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=16000,

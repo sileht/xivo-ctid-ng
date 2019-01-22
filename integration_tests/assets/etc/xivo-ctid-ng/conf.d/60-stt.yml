@@ -12,3 +12,7 @@ enabled_plugins:
   transfers: false
   voicemails: false
 
+
+stt:
+    google_creds: /creds.json
+    ari_websocket_stream: ws://websocket-stt:8765/stream

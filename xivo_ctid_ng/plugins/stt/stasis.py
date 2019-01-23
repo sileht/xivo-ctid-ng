@@ -29,6 +29,7 @@ class SttStasis:
                 sample_rate_hertz=16000,
                 language_code='fr-FR'))
 
+        self._buffers = {}
         if self._config["stt"].get("dump_dir"):
             try:
                 os.makedirs(self._config["stt"]["dump_dir"])
@@ -45,14 +46,15 @@ class SttStasis:
         f = self._threadpool.submit(self._handle_call, event_objects)
         logger.critical("thread started")
 
-    def _handle_call(self, event_objects):
-        channel = event_objects["channel"]
-        dump = None
-
+    def _open_dumb(self, channel):
         if self._config["stt"].get("dump_dir"):
             fpath = "%s/wazo-stt-dump-%s.pcm" % (self._config["stt"]["dump_dir"], channel.id)
-            dump = open(fpath, "wb+")
+            return open(fpath, "wb+")
 
+    def _handle_call(self, event_objects):
+        channel = event_objects["channel"]
+
+        dump = self._open_dumb(channel)
         ws = WebSocketApp(self._config["stt"]["ari_websocket_stream"],
                           header={"Channel-ID": channel.id},
                           subprotocols=["stream-channel"],
@@ -60,7 +62,9 @@ class SttStasis:
                           on_message=functools.partial(self._on_message,
                                                        channel=channel,
                                                        dump=dump),
-                          on_close=functools.partial(self._on_close, dump=dump)
+                          on_close=functools.partial(self._on_close,
+                                                     channel=channel,
+                                                     dump=dump)
                           )
         logger.critical("websocket client started")
         ws.run_forever()
@@ -68,33 +72,41 @@ class SttStasis:
     def _on_error(self, ws, error):
         logger.error("stt websocket error: %s", error)
 
-    def _on_close(self, ws, dump):
+    def _on_close(self, ws, channel, dump):
+        self._send_buffer(channel, dump)
         dump.close()
 
     def _on_message(self, ws, message, channel=None, dump=None):
-        # In practice, stream should be a generator yielding chunks of audio data.
-        logger.critical("_on_message")
+        chunk = self._buffers.setdefault(channel.id, b'') + message
+        self._buffers[channel.id] = chunk
+
+        logger.critical("_on_message: chunk len: %d", len(chunk))
+
+        if len(chunk) < 1024 * 64:
+            return
+
+        self._send_buffer(channel, dump)
+
+    def _send_buffer(self, channel, dump):
+        chunk = self._buffers.pop(channel.id, None)
+        logger.critical("_send_buffer: chunk len: %s",
+                        len(chunk) if chunk is not None else None)
+        if not chunk:
+            return
 
         if dump:
-            dump.write(message)
+            dump.write(chunk)
 
-        stream = [message]
-        requests = (types.StreamingRecognizeRequest(audio_content=chunk)
-                    for chunk in stream)
+        request = types.StreamingRecognizeRequest(audio_content=chunk)
 
         responses = list(self._speech_client.streaming_recognize(
-            self._streaming_config, requests))
+            self._streaming_config, [request]))
 
-        logger.critical("responses: %d" % len(responses))
-        for response in responses:
-            # Once the transcription has settled, the first result will contain the
-            # is_final result. The other results will be for subsequent portions of
-            # the audio.
-            results = list(response.results)
-            logger.critical("results: %d" % len(results))
-            for result in results:
-                if result.is_final:
-                    result_stt = result.alternatives[0].transcript
-                    logger.critical("test: %s", result_stt)
-                    channel.setChannelVar(variable="X_WAZO_STT", value=result_stt)
-                    self._notifier.publish_stt(channel.id, result_stt)
+        results = list(responses[0].results)
+        logger.critical("results: %d" % len(results))
+        for result in results:
+            if result.is_final:
+                result_stt = result.alternatives[0].transcript
+                logger.critical("test: %s", result_stt)
+                channel.setChannelVar(variable="X_WAZO_STT", value=result_stt)
+                self._notifier.publish_stt(channel.id, result_stt)

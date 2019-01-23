@@ -6,7 +6,10 @@ from concurrent.futures import ThreadPoolExecutor
 import functools
 import logging
 
+from ari.exceptions import ARINotFound
+
 from websocket import WebSocketApp
+
 
 from google.cloud import speech
 from google.cloud.speech import enums
@@ -108,8 +111,17 @@ class SttStasis:
             logger.critical("results: %d" % len(results))
             for result in results:
                 if result.is_final:
-                    result_stt = result.alternatives[0].transcript
-                    logger.critical("test: %s", result_stt)
+                    last_stt = result.alternatives[0].transcript
+                    logger.critical("test: %s", last_stt)
+
+                    try:
+                        all_stt = (
+                            channel.getChannelVar(
+                                variable="X_WAZO_STT")['value'] +
+                            last_stt
+                        )
+                    except ARINotFound:
+                        all_stt = last_stt
                     channel.setChannelVar(variable="X_WAZO_STT",
-                                          value=result_stt)
-                    self._notifier.publish_stt(channel.id, result_stt)
+                                          value=all_stt[-1020:])
+                    self._notifier.publish_stt(channel.id, last_stt)
